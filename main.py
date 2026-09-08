@@ -1,4 +1,3 @@
-
 import os
 import json
 import time
@@ -14,7 +13,6 @@ LINE_USER_ID = os.environ.get("LINE_USER_ID")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# 將薄巧替換為外套的核心關鍵字清單
 KEYWORDS = ["韓系", "套裝", "娃衣", "外套"]
 
 # =============================== 2. LINE 推播函數 ===============================
@@ -37,13 +35,24 @@ def send_line_message(text):
     except Exception as e:
         print(f" ❌ LINE 傳送異常：{e}")
 
-# =============================== 3. 時間過濾輔助函數 ===============================
-def is_within_7_days(post_text):
+# =============================== 3. 高品質過濾函數（過濾垃圾文與舊貼文） ===============================
+def is_high_quality_post(post_text):
+    # 7 天時間過濾
     if "2025" in post_text:
         return False
     for w in ["週前", "個月前", "年前"]:
         if w in post_text:
             return False
+            
+    # 字數過短（通常小於 15 字的都是純貼圖或無意義短文）直接排除
+    if not post_text or len(post_text.strip()) < 15:
+        return False
+        
+    # 排除常見的無效純廣告或抽獎洗版字眼（可依需求增減）
+    ignore_words = ["抽獎", "抽", "follower", "粉絲回饋"]
+    if any(iw in post_text for iw in ignore_words) and "怎麼找" not in post_text and "推薦" not in post_text:
+        return False
+        
     return True
 
 # =============================== 4. Playwright 爬蟲函數 ===============================
@@ -78,10 +87,9 @@ def scrape_threads(keyword, max_posts=2):
             for post in posts:
                 try:
                     text = post.inner_text()
-                    if not text or len(text.strip()) < 10:
-                        continue
-                        
-                    if not is_within_7_days(text):
+                    
+                    # 先在本地進行嚴格過濾，符合高品質才保留送出
+                    if not is_high_quality_post(text):
                         continue
                         
                     link_elem = post.locator('a[href*="/@"]').first
@@ -150,23 +158,23 @@ def analyze_and_notify(post_info):
         except Exception as e:
             err_msg = str(e)
             if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
-                print(f" ⚠️ 觸發 API 頻率限制，等待 15 秒後重試（第 {attempt + 1}/3 次）...")
-                time.sleep(15)
+                print(f" ⚠️ 觸發 API 頻率限制，等待 10 秒後重試（第 {attempt + 1}/3 次）...")
+                time.sleep(10)
             elif "503" in err_msg or "UNAVAILABLE" in err_msg:
-                print(f" ⚠️ Gemini 伺服器忙碌，等待 5 秒後重試（第 {attempt + 1}/3 次）...")
-                time.sleep(5)
+                print(f" ⚠️ Gemini 伺服器忙碌，等待 3 秒後重試（第 {attempt + 1}/3 次）ချင်း...")
+                time.sleep(3)
             else:
                 print(f" ❌ Gemini 分析出錯：{e}")
                 break
         
-        time.sleep(2)
+        time.sleep(1)
 
 # =============================== 6. 主程式執行 ===============================
 if __name__ == "__main__":
     print(" 🚀 開始執行 Threads 海巡機器人...")
     for keyword in KEYWORDS:
         posts = scrape_threads(keyword, max_posts=2)
-        print(f" 🤖 成功抓取 {len(posts)} 篇最新貼文，開始交給 Gemini 分析...")
+        print(f" 🤖 成功過濾並抓取 {len(posts)} 篇高品質貼文，開始交給 Gemini 分析...")
         for post in posts:
             analyze_and_notify(post)
             time.sleep(1)
