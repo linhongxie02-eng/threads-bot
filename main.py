@@ -1,3 +1,4 @@
+
 import os
 import json
 import time
@@ -37,11 +38,9 @@ def send_line_message(text):
 
 # =============================== 3. 時間過濾輔助函數 ===============================
 def is_within_7_days(post_text):
-    # 檢查是否含有明顯的舊年份（例如 2025）
     if "2025" in post_text:
         return False
     
-    # 簡單過濾週數過大或月份字眼（若文章寫到幾週前、幾個月前則排除）
     for w in ["週前", "個月前", "年前"]:
         if w in post_text:
             return False
@@ -83,7 +82,6 @@ def scrape_threads(keyword, max_posts=3):
                     if not text or len(text.strip()) < 10:
                         continue
                         
-                    # 執行 7 天內時間過濾
                     if not is_within_7_days(text):
                         continue
                         
@@ -132,7 +130,7 @@ def analyze_and_notify(post_info):
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.6-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json"
