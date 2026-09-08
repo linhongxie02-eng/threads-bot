@@ -14,7 +14,8 @@ LINE_USER_ID = os.environ.get("LINE_USER_ID")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-KEYWORDS = ["韓系", "套裝", "包包", "娃衣", "追星", "外套", "星星", "波點", "帽T", "吊飾", "錢包", "褲子", "彎刀褲", "七分褲", "闊腿褲", "薄巧"]
+# 將薄巧替換為外套的核心關鍵字清單
+KEYWORDS = ["韓系", "套裝", "娃衣", "外套"]
 
 # =============================== 2. LINE 推播函數 ===============================
 def send_line_message(text):
@@ -40,15 +41,13 @@ def send_line_message(text):
 def is_within_7_days(post_text):
     if "2025" in post_text:
         return False
-    
     for w in ["週前", "個月前", "年前"]:
         if w in post_text:
             return False
-            
     return True
 
 # =============================== 4. Playwright 爬蟲函數 ===============================
-def scrape_threads(keyword, max_posts=3):
+def scrape_threads(keyword, max_posts=2):
     print(f" 🔍 正在海巡【7天內最新】貼文，關鍵字：[{keyword}]...")
     posts_data = []
     
@@ -69,11 +68,11 @@ def scrape_threads(keyword, max_posts=3):
         
         try:
             page.goto(search_url, timeout=60000)
-            time.sleep(5)
+            time.sleep(4)
             
-            for _ in range(2):
+            for _ in range(1):
                 page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                time.sleep(3)
+                time.sleep(2)
                 
             posts = page.locator('div[data-pressable-container="true"]').all()
             for post in posts:
@@ -151,16 +150,16 @@ def analyze_and_notify(post_info):
         except Exception as e:
             err_msg = str(e)
             if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
-                print(f" ⚠️ 觸發 API 頻率限制，等待 60 秒恢復額度（第 {attempt + 1}/3 次）...")
-                time.sleep(60)
-            elif "503" in err_msg or "UNAVAILABLE" in err_msg:
-                print(f" ⚠️ Gemini 伺服器忙碌，等待 15 秒後重試（第 {attempt + 1}/3 次）...")
+                print(f" ⚠️ 觸發 API 頻率限制，等待 15 秒後重試（第 {attempt + 1}/3 次）...")
                 time.sleep(15)
+            elif "503" in err_msg or "UNAVAILABLE" in err_msg:
+                print(f" ⚠️ Gemini 伺服器忙碌，等待 5 秒後重試（第 {attempt + 1}/3 次）...")
+                time.sleep(5)
             else:
                 print(f" ❌ Gemini 分析出錯：{e}")
                 break
         
-        time.sleep(40)
+        time.sleep(2)
 
 # =============================== 6. 主程式執行 ===============================
 if __name__ == "__main__":
@@ -170,5 +169,5 @@ if __name__ == "__main__":
         print(f" 🤖 成功抓取 {len(posts)} 篇最新貼文，開始交給 Gemini 分析...")
         for post in posts:
             analyze_and_notify(post)
-            time.sleep(5)
+            time.sleep(1)
     print(" ✅ 本次海巡任務圓滿結束！")
