@@ -38,19 +38,23 @@ def send_line_message(text):
 # =============================== 3. 高品質與日期過濾函數 ===============================
 def is_high_quality_post(post_text):
     # 嚴格排除舊年份
-    if "2025" in post_text or "2024" in post_text:
+    if any(y in post_text for y in ["2025", "2024", "2023"]):
         return False
         
-    # 排除常見的相對時間舊貼文
+    # 排除相對時間舊貼文
     for w in ["週前", "個月前", "年前", "個月"]:
         if w in post_text:
             return False
             
-    # 排除非 9 月的早期月份（例如 7月、8月等舊貼文）
-    old_months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月"]
-    for m in old_months:
-        if m in post_text:
-            return False
+    # 排除中文舊月份
+    old_months_cn = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月"]
+    if any(m in post_text for m in old_months_cn):
+        return False
+        
+    # 排除數字格式的舊月份（例如 07/、08/ 或 7/、8/ 等非 9 月日期）
+    old_months_num = ["01/", "02/", "03/", "04/", "05/", "06/", "07/", "08/", "1/", "2/", "3/", "4/", "5/", "6/", "7/", "8/"]
+    if any(num in post_text for num in old_months_num):
+        return False
             
     # 字數過短（小於 15 字）通常是無意義短文
     if not post_text or len(post_text.strip()) < 15:
@@ -188,5 +192,5 @@ if __name__ == "__main__":
         print(f" 🤖 成功過濾並抓取 {len(posts)} 篇高品質貼文，開始交給 Gemini 分析...")
         for post in posts:
             analyze_and_notify(post)
-            time.sleep(1)
+            time.sleep(4)  # 拉開間隔，避免 429 頻率限制
     print(" ✅ 本次海巡任務圓滿結束！")
