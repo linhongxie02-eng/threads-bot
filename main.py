@@ -35,20 +35,17 @@ def send_line_message(text):
     except Exception as e:
         print(f" ❌ LINE 傳送異常：{e}")
 
-# =============================== 3. 高品質過濾函數（過濾垃圾文與舊貼文） ===============================
+# =============================== 3. 高品質過濾函數 ===============================
 def is_high_quality_post(post_text):
-    # 7 天時間過濾
     if "2025" in post_text:
         return False
     for w in ["週前", "個月前", "年前"]:
         if w in post_text:
             return False
             
-    # 字數過短（通常小於 15 字的都是純貼圖或無意義短文）直接排除
     if not post_text or len(post_text.strip()) < 15:
         return False
         
-    # 排除常見的無效純廣告或抽獎洗版字眼（可依需求增減）
     ignore_words = ["抽獎", "抽", "follower", "粉絲回饋"]
     if any(iw in post_text for iw in ignore_words) and "怎麼找" not in post_text and "推薦" not in post_text:
         return False
@@ -87,8 +84,6 @@ def scrape_threads(keyword, max_posts=2):
             for post in posts:
                 try:
                     text = post.inner_text()
-                    
-                    # 先在本地進行嚴格過濾，符合高品質才保留送出
                     if not is_high_quality_post(text):
                         continue
                         
@@ -132,7 +127,7 @@ def analyze_and_notify(post_info):
     post_text = post_info["text"]
     post_url = post_info["url"]
     
-    prompt = f"{SYSTEM_PROMPT}\n\n請分析以下貼文：\n{post_text} "
+    prompt = f"{SYSTEM_PROMPT}\n\n請分析以下貼文：\n{post_text}"
     
     for attempt in range(3):
         try:
@@ -147,11 +142,11 @@ def analyze_and_notify(post_info):
             result = json.loads(response.text)
             is_target = result.get('is_target', False)
             
-            print(f" 📌 貼文內容 : {post_text[:30]}...")
+            print(f" 📌 貼文摘要 : {post_text[:30]}...")
             print(f" 🎯 是否為潛在客戶 : { '【是】' if is_target else '【否】' }")
             
             if is_target:
-                msg = f"🔥 抓到最新潛在客戶 Threads 貼文！\n\n📌 內容 : {post_text}\n\n🔗 貼文連結 : \n{post_url}"
+                msg = f"🔥 抓到最新潛在客戶 Threads 貼文！\n\n🔗 貼文連結：\n{post_url}"
                 send_line_message(msg)
             break
             
@@ -161,7 +156,7 @@ def analyze_and_notify(post_info):
                 print(f" ⚠️ 觸發 API 頻率限制，等待 10 秒後重試（第 {attempt + 1}/3 次）...")
                 time.sleep(10)
             elif "503" in err_msg or "UNAVAILABLE" in err_msg:
-                print(f" ⚠️ Gemini 伺服器忙碌，等待 3 秒後重試（第 {attempt + 1}/3 次）ချင်း...")
+                print(f" ⚠️ Gemini 伺服器忙碌，等待 3 秒後重試（第 {attempt + 1}/3 次）...")
                 time.sleep(3)
             else:
                 print(f" ❌ Gemini 分析出錯：{e}")
