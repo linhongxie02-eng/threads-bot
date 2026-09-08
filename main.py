@@ -7,9 +7,9 @@ from google.genai import types
 from playwright.sync_api import sync_playwright
 
 # ================= 1. 金鑰與設定 (自動支援本地與 GitHub Actions) =================
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") or "AQ.Ab8RN6JKc_Oj5-L8j8fV9JmjGSKcRtNNRX9FFTe1qgRCGfsxUw"
-LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN") or "P5HP6GzVwPRsjOS43xLuLrUNCeHiUCQLGl8AeEBdz5VnpOADNQojzm9NxlOnCVx/Q8nzVGKFaZuoRovE6YeBK+eB4oRblP1Wc1Mvp7YhwEIrHxwjH1WDVHKnCT0LTxK0Kp56mqJGYobsQ+OmaDAkNQdB04t89/1O/w1cDnyilFU="
-LINE_USER_ID = os.environ.get("LINE_USER_ID") or "U7c1f91182b9799907840e814945504dc"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
+LINE_USER_ID = os.environ.get("LINE_USER_ID")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
