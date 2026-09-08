@@ -19,7 +19,8 @@ jobs:
 
       - name: 安裝相依套件與 Playwright 瀏覽器
         run: |
-          pip install requests google-genai playwright
+          python -m pip install --upgrade pip
+          pip install --upgrade google-genai google-generativeai playwright requests
           playwright install chromium
 
       - name: 執行 Python 爬蟲機器人
