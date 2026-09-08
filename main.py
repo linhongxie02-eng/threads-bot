@@ -35,17 +35,28 @@ def send_line_message(text):
     except Exception as e:
         print(f" ❌ LINE 傳送異常：{e}")
 
-# =============================== 3. 高品質過濾函數 ===============================
+# =============================== 3. 高品質與日期過濾函數 ===============================
 def is_high_quality_post(post_text):
-    if "2025" in post_text:
+    # 嚴格排除舊年份
+    if "2025" in post_text or "2024" in post_text:
         return False
-    for w in ["週前", "個月前", "年前"]:
+        
+    # 排除常見的相對時間舊貼文
+    for w in ["週前", "個月前", "年前", "個月"]:
         if w in post_text:
             return False
             
+    # 排除非 9 月的早期月份（例如 7月、8月等舊貼文）
+    old_months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月"]
+    for m in old_months:
+        if m in post_text:
+            return False
+            
+    # 字數過短（小於 15 字）通常是無意義短文
     if not post_text or len(post_text.strip()) < 15:
         return False
         
+    # 排除常見廣告或抽獎洗版字眼
     ignore_words = ["抽獎", "抽", "follower", "粉絲回饋"]
     if any(iw in post_text for iw in ignore_words) and "怎麼找" not in post_text and "推薦" not in post_text:
         return False
@@ -54,7 +65,7 @@ def is_high_quality_post(post_text):
 
 # =============================== 4. Playwright 爬蟲函數 ===============================
 def scrape_threads(keyword, max_posts=2):
-    print(f" 🔍 正在海巡【7天內最新】貼文，關鍵字：[{keyword}]...")
+    print(f" 🔍 正在海巡【最新】貼文，關鍵字：[{keyword}]...")
     posts_data = []
     
     with sync_playwright() as p:
@@ -87,8 +98,13 @@ def scrape_threads(keyword, max_posts=2):
                     if not is_high_quality_post(text):
                         continue
                         
-                    link_elem = post.locator('a[href*="/@"]').first
-                    href = link_elem.get_attribute("href") if link_elem.count() > 0 else ""
+                    # 優先抓取包含 /post/ 的專屬貼文連結
+                    link_elem = post.locator('a[href*="/post/"]').first
+                    if link_elem.count() > 0:
+                        href = link_elem.get_attribute("href")
+                    else:
+                        link_elem = post.locator('a[href*="/@"]').first
+                        href = link_elem.get_attribute("href") if link_elem.count() > 0 else ""
                     
                     if href.startswith("http"):
                         post_url = href
@@ -98,7 +114,7 @@ def scrape_threads(keyword, max_posts=2):
                     if not post_url or "search" in post_url:
                         continue
                         
-                    if not any(p['text'] == text for p in posts_data):
+                    if not any(p['url'] == post_url for p in posts_data):
                         posts_data.append({"text": text, "url": post_url})
                         if len(posts_data) >= max_posts:
                             break
